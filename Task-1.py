@@ -19,25 +19,36 @@ metadata_country.info()
 
 metadata_indicator.info()
 
+# Delete parcing row
 df = df.drop(columns=['Unnamed: 69'])
 metadata_country = metadata_country.drop(columns=['Unnamed: 5'])
 metadata_indicator = metadata_indicator.drop(columns=['Unnamed: 4'])
 
 df.head()
 
+"""Although aggregate entities are not explicitly labeled in the main dataset, the World Bank provides entity definitions in the country metadata. By filtering out records where the region is marked as “Aggregates,” we ensure that only valid country-level observations are included in the analysis."""
+
 metadata_country.head()
+
+"""From Metadata_Country file we know that country-level entities can be identified by having both Region and IncomeGroup populated, while aggregate entities exhibit missing values in one or both of these columns."""
+
+# make sure the rules before use it for filtering country
+metadata_country[['Region', 'IncomeGroup']].isna().value_counts()
+
+"""Based on the output, 215 entities have both Region and IncomeGroup defined, indicating country-level records. Additionally, 48 entities have both fields missing, which corresponds to aggregate entities. There are also 2 entities where Region is defined but IncomeGroup is missing, representing regional aggregates rather than countries."""
 
 metadata_indicator.sample()
 
 # Make rules that keep only country-level entities (exclude aggregates (in this case the aggregates is NaN) using metadata)
-valid_countries = metadata_country.loc[metadata_country['Region'].notna()]['Country Code']
+valid_countries = metadata_country.loc[
+    metadata_country['Region'].notna()
+    & metadata_country['IncomeGroup'].notna()
+    ]['Country Code']
 
 df_country= df[df['Country Code'].isin(valid_countries)] # Filtered country with the "valid_countries" as a rules
 df_2024 = df_country[['Country Name', '2024']].dropna()
 
 top10 = (df_2024.sort_values(by='2024', ascending=False).head(10))
-
-"""We use the "metadata_country" to; filtered between country data and region data, and skipped the noise"""
 
 import matplotlib.pyplot as plt
 
@@ -50,15 +61,63 @@ plt.xlabel('Country')
 plt.tight_layout()
 plt.show()
 
-top_country = ['India', 'China', 'United States']
+"""The three countries with the largest populations are India, China, and the United States. To provide context for this snapshot, the population levels of these countries are compared across the 2020–2024 period to observe short-term changes"""
+
+import numpy as np
+
+top_country = ['United States', 'China', 'India']
 years = ['2020', '2021', '2022', '2023', '2024'] # Range of Time
 
-trend = (df_country[
+population_subset = (df_country[
     df_country['Country Name'].isin(top_country)]
-         [['Country Name'] + years])
+         [['Country Name', 'Country Code'] + years])
 
-df_long = trend.melt(
-    id_vars='Country Name',
-    value_vars=years,
-    var_name='Year'
+x = np.arange(len(years))
+width = 0.25
+
+plt.figure(figsize=(10,6))
+
+for i, country in enumerate(top_country):
+  values = population_subset[population_subset['Country Name'] == country][years].values.flatten()
+
+# Plot
+  plt.bar(
+      x+i * width,
+      values,
+      width,
+      label=country
+  )
+
+plt.xticks(x + width, years)
+plt.xlabel('Year')
+plt.ylabel('Population')
+plt.title("Top 3 Country with Largest Population (2020-2024)")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+"""From 2020 to 2024, India experiences steady population growth, China remains largely stable, and the United States shows moderate increases. This comparison reflects short-term population dynamics rather than long-term trends."""
+
+print(metadata_country['IncomeGroup'].unique())
+
+top_income = (
+    population_subset[['Country Code', '2024']].merge(
+        metadata_country[['Country Code', 'IncomeGroup']],
+        on='Country Code',
+        how='left'
     )
+)
+
+top_income['2024'] = pd.to_numeric(top_income['2024'], errors='coerce')
+top_income = top_income.dropna(subset=['IncomeGroup', '2024'])
+
+plt.figure(figsize=(10,6))
+for g in top_income['IncomeGroup'].unique():
+    vals = top_income.loc[top_income['IncomeGroup'] == g, '2024']
+    plt.hist(vals, bins=30, alpha=0.6, label=g)
+plt.xlabel('Population (2024)')
+plt.ylabel('Number of Countries')
+plt.title('Distribution of Country Populations by Income Group (2024)')
+plt.legend()
+plt.tight_layout()
+plt.show()
