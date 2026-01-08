@@ -39,6 +39,8 @@ metadata_country[['Region', 'IncomeGroup']].isna().value_counts()
 
 metadata_indicator.sample()
 
+"""## **1. Apa Country dengan populasi terbesar?**"""
+
 # Make rules that keep only country-level entities (exclude aggregates (in this case the aggregates is NaN) using metadata)
 valid_countries = metadata_country.loc[
     metadata_country['Region'].notna()
@@ -49,6 +51,8 @@ df_country= df[df['Country Code'].isin(valid_countries)] # Filtered country with
 df_2024 = df_country[['Country Name', '2024']].dropna()
 
 top10 = (df_2024.sort_values(by='2024', ascending=False).head(10))
+
+print(df['Country Name'] == 'China')
 
 import matplotlib.pyplot as plt
 
@@ -61,7 +65,49 @@ plt.xlabel('Country')
 plt.tight_layout()
 plt.show()
 
-"""The three countries with the largest populations are India, China, and the United States. To provide context for this snapshot, the population levels of these countries are compared across the 2020–2024 period to observe short-term changes"""
+"""The three countries with the largest populations are India, China, and the United States. To provide context for this snapshot, the population levels of these countries are compared across the 2020–2024 period to observe short-term changes
+
+## **2. Bagaimana Kondisi Ekonomi dari Negara-Negara yang memiliki populasi terbesar di dunia?**
+"""
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+top_country = ['United States', 'China', 'India']
+df_top = (
+    metadata_country[
+        metadata_country['TableName'].isin(top_country)
+    ][['TableName', 'IncomeGroup']]
+)
+
+income_order = {
+    'Low income': 1,
+    'Lower middle income': 2,
+    'Upper middle income': 3,
+    'High income': 4
+}
+
+df_top['IncomeCode'] = df_top['IncomeGroup'].map(income_order)
+
+# plot
+plt.figure(figsize=(7,5))
+plt.bar(df_top['TableName'], df_top['IncomeCode'])
+
+plt.yticks(
+    list(income_order.values()),
+    list(income_order.keys())
+)
+
+plt.xlabel('Country')
+plt.ylabel('Income Group')
+plt.title('Income Group Classification of Top Countries')
+plt.tight_layout()
+plt.show()
+
+"""Although the United States, China, and India are all globally influential countries, they belong to different income groups. This highlights that global influence and economic scale do not necessarily translate into high per-capita income, underscoring the importance of income-group stratification in cross-country analyses.
+
+## **3. Bagaimana Pertumbuhan ketiga negara tersebut dalam 4 tahun terakhir?**
+"""
 
 import numpy as np
 
@@ -96,28 +142,115 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
-"""From 2020 to 2024, India experiences steady population growth, China remains largely stable, and the United States shows moderate increases. This comparison reflects short-term population dynamics rather than long-term trends."""
+"""From 2020 to 2024, India experiences steady population growth, China remains largely stable, and the United States shows moderate increases. This comparison reflects short-term population dynamics rather than long-term trends.
+
+## **4. What is the composition of the number of countries in each income group, and does this classification change over the 2020–2024 period?**
+"""
 
 print(metadata_country['IncomeGroup'].unique())
 
-top_income = (
-    population_subset[['Country Code', '2024']].merge(
+df_base = (
+    df_country[df_country['Country Code'].str.len() == 3]
+    .merge(
         metadata_country[['Country Code', 'IncomeGroup']],
         on='Country Code',
         how='left'
     )
 )
 
-top_income['2024'] = pd.to_numeric(top_income['2024'], errors='coerce')
-top_income = top_income.dropna(subset=['IncomeGroup', '2024'])
+df_base = df_base.dropna(subset=['IncomeGroup'])
+
+# Calculate the number of countries per income group per year
+records = []
+for year in years:
+    counts = (
+        df_base[['Country Code', 'IncomeGroup']]
+        .drop_duplicates()
+        .groupby('IncomeGroup')
+        .size()
+    )
+    counts.name = year
+    records.append(counts)
+
+df_bar = pd.concat(records, axis=1).fillna(0)
+
+# plot
+plt.figure(figsize=(10,6))
+df_bar.T.plot(kind='bar')
+
+plt.xlabel('Year')
+plt.ylabel('Number of Countries')
+plt.title('Number of Countries by Income Group (2020–2024)')
+plt.xticks(rotation=0)
+plt.legend(title='Income Group')
+plt.tight_layout()
+plt.show()
+
+"""The number of countries in each income group from 2020 to 2024. The counts remain constant across years, reflecting that income group classifications are treated as static metadata in this dataset rather than time-varying economic indicators. This stability provides a structural baseline for subsequent analyses comparing population and economic variables across income groups"""
+
+df_hist = (
+    df_country[
+        df_country['Country Code'].str.len() == 3][['Country Code', '2024']]
+        .dropna().merge(
+        metadata_country[['Country Code', 'IncomeGroup']],
+        on='Country Code',
+        how='left'
+    )
+)
+
+df_hist['2024'] = pd.to_numeric(df_hist['2024'], errors='coerce')
+df_hist = df_hist.dropna(subset=['IncomeGroup', '2024'])
+
+
+df_hist['IncomeGroup'].value_counts()
 
 plt.figure(figsize=(10,6))
-for g in top_income['IncomeGroup'].unique():
-    vals = top_income.loc[top_income['IncomeGroup'] == g, '2024']
-    plt.hist(vals, bins=30, alpha=0.6, label=g)
-plt.xlabel('Population (2024)')
-plt.ylabel('Number of Countries')
-plt.title('Distribution of Country Populations by Income Group (2024)')
+df_hist['log_pop_2024'] = np.log10(df_hist['2024']) # Log Transform Population
+
+bins = np.linspace(
+    df_hist['log_pop_2024'].min(),
+    df_hist['log_pop_2024'].max(),
+    30
+)
+
+for g in sorted(df_hist['IncomeGroup'].unique()):
+    vals = df_hist.loc[df_hist['IncomeGroup'] == g, 'log_pop_2024']
+    plt.hist(
+        vals,
+        bins=bins,
+        alpha=0.45,
+        label=g,
+        edgecolor='black',
+        linewidth=0.8
+    )
+
+plt.xlabel('Population (log10 scale, 2024)')
+plt.ylabel('Number of countries')
+plt.title('Population Distribution by Income Group (2024)')
 plt.legend()
 plt.tight_layout()
 plt.show()
+
+df_hist = (
+    df_country[df_country['Country Code'].str.len() == 3]
+    [['Country Code'] + years]
+    .merge(
+        metadata_country[['Country Code', 'IncomeGroup']],
+        on='Country Code',
+        how='left'
+    )
+)
+
+df_hist[years] = df_hist[years].apply(pd.to_numeric, errors='coerce')
+
+df_long = (
+    df_hist
+    .melt(
+        id_vars=['Country Code', 'IncomeGroup'],
+        value_vars=years,
+        var_name='Year',
+        value_name='Population'
+    )
+    .dropna(subset=['IncomeGroup', 'Population'])
+)
+
