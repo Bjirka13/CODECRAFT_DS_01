@@ -52,8 +52,6 @@ df_2024 = df_country[['Country Name', '2024']].dropna()
 
 top10 = (df_2024.sort_values(by='2024', ascending=False).head(10))
 
-print(df['Country Name'] == 'China')
-
 import matplotlib.pyplot as plt
 
 plt.figure(figsize=(10,6))
@@ -186,7 +184,10 @@ plt.legend(title='Income Group')
 plt.tight_layout()
 plt.show()
 
-"""The number of countries in each income group from 2020 to 2024. The counts remain constant across years, reflecting that income group classifications are treated as static metadata in this dataset rather than time-varying economic indicators. This stability provides a structural baseline for subsequent analyses comparing population and economic variables across income groups"""
+"""The number of countries in each income group from 2020 to 2024. The counts remain constant across years, reflecting that income group classifications are treated as static metadata in this dataset rather than time-varying economic indicators. This stability provides a structural baseline for subsequent analyses comparing population and economic variables across income groups
+
+## 5.
+"""
 
 df_hist = (
     df_country[
@@ -204,36 +205,15 @@ df_hist = df_hist.dropna(subset=['IncomeGroup', '2024'])
 
 df_hist['IncomeGroup'].value_counts()
 
-plt.figure(figsize=(10,6))
-df_hist['log_pop_2024'] = np.log10(df_hist['2024']) # Log Transform Population
-
-bins = np.linspace(
-    df_hist['log_pop_2024'].min(),
-    df_hist['log_pop_2024'].max(),
-    30
-)
-
-for g in sorted(df_hist['IncomeGroup'].unique()):
-    vals = df_hist.loc[df_hist['IncomeGroup'] == g, 'log_pop_2024']
-    plt.hist(
-        vals,
-        bins=bins,
-        alpha=0.45,
-        label=g,
-        edgecolor='black',
-        linewidth=0.8
-    )
-
-plt.xlabel('Population (log10 scale, 2024)')
-plt.ylabel('Number of countries')
-plt.title('Population Distribution by Income Group (2024)')
-plt.legend()
-plt.tight_layout()
-plt.show()
+years_10 = [
+    '2015','2016','2017','2018','2019',
+    '2020','2021','2022','2023','2024'
+]
 
 df_hist = (
-    df_country[df_country['Country Code'].str.len() == 3]
-    [['Country Code'] + years]
+    df_country[
+        df_country['Country Code'].str.len() == 3
+    ][['Country Code'] + years_10]
     .merge(
         metadata_country[['Country Code', 'IncomeGroup']],
         on='Country Code',
@@ -241,16 +221,41 @@ df_hist = (
     )
 )
 
-df_hist[years] = df_hist[years].apply(pd.to_numeric, errors='coerce')
+df_hist = df_hist[df_hist['IncomeGroup'] == 'High income']
 
-df_long = (
-    df_hist
-    .melt(
-        id_vars=['Country Code', 'IncomeGroup'],
-        value_vars=years,
-        var_name='Year',
-        value_name='Population'
-    )
-    .dropna(subset=['IncomeGroup', 'Population'])
+df_long = df_hist.melt(
+    id_vars=['Country Code', 'IncomeGroup'],
+    value_vars=years_10,
+    var_name='Year',
+    value_name='Population'
 )
+
+df_long['Population'] = pd.to_numeric(df_long['Population'], errors='coerce')
+df_long = df_long.dropna(subset=['Population'])
+
+df_long['log_pop'] = np.log10(df_long['Population'])
+
+# Plot
+plt.figure(figsize=(10,6))
+bins = np.linspace(
+    df_long['log_pop'].min(),
+    df_long['log_pop'].max(),
+    30
+)
+
+plt.hist(
+    df_long['log_pop'],
+    bins=bins,
+    alpha=0.5,
+    edgecolor='black',
+    linewidth=0.8
+)
+
+plt.xlabel('Population (log10 scale)')
+plt.ylabel('Number of observations')
+plt.title('Population Distribution of High-Income Countries (Last 10 Years)')
+plt.tight_layout()
+plt.show()
+
+"""Because high-income countries exhibit a wide and heterogeneous population distribution over the last decade, subsequent analyses should avoid treating them as a single homogeneous group. Population-aware stratification or per-capita normalization is therefore required to ensure valid cross-country comparisons"""
 
