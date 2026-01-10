@@ -39,7 +39,7 @@ metadata_country[['Region', 'IncomeGroup']].isna().value_counts()
 
 metadata_indicator.sample()
 
-"""## **1. Apa Country dengan populasi terbesar?**"""
+"""## **1. Which Countries have the largest populations in the most recent year, and how large is the population gap compared to other countries?**"""
 
 # Make rules that keep only country-level entities (exclude aggregates (in this case the aggregates is NaN) using metadata)
 valid_countries = metadata_country.loc[
@@ -65,11 +65,10 @@ plt.show()
 
 """The three countries with the largest populations are India, China, and the United States. To provide context for this snapshot, the population levels of these countries are compared across the 2020–2024 period to observe short-term changes
 
-## **2. Bagaimana Kondisi Ekonomi dari Negara-Negara yang memiliki populasi terbesar di dunia?**
+## **2. What is the income group composition of the most countries, and do highly populated countries tend to fail into specific income groups?**
 """
 
 import matplotlib.pyplot as plt
-import pandas as pd
 
 top_country = ['United States', 'China', 'India']
 df_top = (
@@ -104,7 +103,7 @@ plt.show()
 
 """Although the United States, China, and India are all globally influential countries, they belong to different income groups. This highlights that global influence and economic scale do not necessarily translate into high per-capita income, underscoring the importance of income-group stratification in cross-country analyses.
 
-## **3. Bagaimana Pertumbuhan ketiga negara tersebut dalam 4 tahun terakhir?**
+## **3. How has the population of the three most populous countries grown over the past four years, and do their growth trends exhibit different petterns?**
 """
 
 import numpy as np
@@ -184,10 +183,7 @@ plt.legend(title='Income Group')
 plt.tight_layout()
 plt.show()
 
-"""The number of countries in each income group from 2020 to 2024. The counts remain constant across years, reflecting that income group classifications are treated as static metadata in this dataset rather than time-varying economic indicators. This stability provides a structural baseline for subsequent analyses comparing population and economic variables across income groups
-
-## 5.
-"""
+"""The number of countries in each income group from 2020 to 2024. The counts remain constant across years, reflecting that income group classifications are treated as static metadata in this dataset rather than time-varying economic indicators. This stability provides a structural baseline for subsequent analyses comparing population and economic variables across income groups"""
 
 df_hist = (
     df_country[
@@ -202,8 +198,9 @@ df_hist = (
 df_hist['2024'] = pd.to_numeric(df_hist['2024'], errors='coerce')
 df_hist = df_hist.dropna(subset=['IncomeGroup', '2024'])
 
-
 df_hist['IncomeGroup'].value_counts()
+
+"""## **5. Over the past 10 years, do HighIncome countries exhibit a homogeneous population distribution, or is there substantial variation within the group?**"""
 
 years_10 = [
     '2015','2016','2017','2018','2019',
