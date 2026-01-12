@@ -39,7 +39,10 @@ metadata_country[['Region', 'IncomeGroup']].isna().value_counts()
 
 metadata_indicator.sample()
 
-"""## **1. Which Countries have the largest populations in the most recent year, and how large is the population gap compared to other countries?**"""
+"""#
+
+## **1. Which Countries have the largest populations in the most recent year, and how large is the population gap compared to other countries?**
+"""
 
 # Make rules that keep only country-level entities (exclude aggregates (in this case the aggregates is NaN) using metadata)
 valid_countries = metadata_country.loc[
@@ -254,5 +257,14 @@ plt.title('Population Distribution of High-Income Countries (Last 10 Years)')
 plt.tight_layout()
 plt.show()
 
-"""Because high-income countries exhibit a wide and heterogeneous population distribution over the last decade, subsequent analyses should avoid treating them as a single homogeneous group. Population-aware stratification or per-capita normalization is therefore required to ensure valid cross-country comparisons"""
+"""Because high-income countries exhibit a wide and heterogeneous population distribution over the last decade, subsequent analyses should avoid treating them as a single homogeneous group. Population-aware stratification or per-capita normalization is therefore required to ensure valid cross-country comparisons
+
+## Conclusion
+
+This analysis examined global population petterns by addressing seceral key questions related to country population size, income group classification, and temporal distribution. The results show that countries with the largest populations are limited to a small subset of nations, indication a strong concentration of global population in specific regions.
+
+Further analysis reveals that income group classification does not correspond directly to population size. High-Income countries exhibit a wide range of populations values, demonstrating substantial internal heterogeneity rather than forming a homogenenous group.
+
+When population distribution is observed over recent years, this heterogeneity remains consistent, that income classification alone is insufficient to describe population characteristics. Overall, the findings indicate that Income Group should not be treated as a proxy for population scale, and analysis should consider population size as an indepedent dimension
+"""
 
